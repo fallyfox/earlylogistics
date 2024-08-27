@@ -5,15 +5,47 @@ import { TextField,Button } from "@mui/material";
 import { validation } from "@/utils/create_form_rules";
 import { getTrackingId } from "@/utils/generate_tracking_id";
 import { billing } from "@/utils/generate_billing";
+import { db } from "@/lib/firebase.lib";
+import { collection,addDoc } from "firebase/firestore";
+import Backdrop from '@mui/material/Backdrop';
+import CircularProgress from '@mui/material/CircularProgress';
 
 export default function Create () {
     const [trackingId,setTrackingId] = useState("");
     const [bill,setBill] = useState(0);
+    const [activityIndicator,setActivityIndicator] = useState(false);
 
     const { handleBlur,handleSubmit,handleChange,touched,errors,values } = useFormik({
         initialValues: { title:"",description:"",origin:"",destination:"",senderFullName:"",senderPhone:"",weight:0,length:0,breadth:0,height:0,value:"" },
-        onSubmit: () => {
-            //
+        onSubmit: async () => {
+            setActivityIndicator(true);
+
+            await addDoc(collection(db,"packages"),{
+                packageId: trackingId,
+                title: values.title,
+                desc: values.description,
+                origin: values.origin,
+                destination: values.destination,
+                sender: values.senderFullName,
+                senderPhone: values.senderPhone,
+                dimension: {
+                    l: values.length,
+                    b: values.breadth,
+                    h: values.height
+                },
+                weight: values.weight,
+                billing: bill,
+                paid: false,
+                processedBy: null,
+                timestamp: new Date().getTime()
+            })
+            .then( () => {
+                setActivityIndicator(false)
+            })
+            .catch((e) => {
+                setActivityIndicator(false);
+                console.log(e);
+            })
         },
         validationSchema: validation
     });
@@ -31,6 +63,7 @@ export default function Create () {
     },[touched.height]);
 
     return (
+        <>
         <section className="lg:grid lg:grid-cols-2 lg:gap-12 py-12 px-4 md:px-8 lg:px-12">
             <article className="p-4 border border-gray-200 rounded-md">
                 <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -206,5 +239,13 @@ export default function Create () {
                 </div>
             </aside>
         </section>
+
+        <Backdrop
+        sx={(theme) => ({ color: '#fff', zIndex: theme.zIndex.drawer + 1 })}
+        open={activityIndicator}
+        >
+        <CircularProgress color="error" />
+        </Backdrop>
+    </>
     )
 }
