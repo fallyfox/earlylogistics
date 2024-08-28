@@ -1,7 +1,7 @@
 import * as yup from "yup";
 
 export const validation = yup.object().shape({
-    oruko: yup.string().required().min(8),
+    title: yup.string().required().min(8),
     description: yup.string().required(),
     origin: yup.string().required(),
     destination: yup.string().required(),

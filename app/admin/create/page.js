@@ -2,18 +2,27 @@
 import { useState,useEffect } from "react";
 import { useFormik } from "formik";
 import { TextField,Button } from "@mui/material";
-import { validation } from "@/utils/create_form_rules";
-import { getTrackingId } from "@/utils/generate_tracking_id";
-import { billing } from "@/utils/generate_billing";
-import { db } from "@/lib/firebase.lib";
+import { validation } from "@/utils/create_form_rules";//
+import { getTrackingId } from "@/utils/generate_tracking_id";//
+import { billing } from "@/utils/generate_billing";//
+import { db } from "@/lib/firebase.lib";//
 import { collection,addDoc } from "firebase/firestore";
 import Backdrop from '@mui/material/Backdrop';
 import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import { GrStatusGood } from "react-icons/gr";
 
 export default function Create () {
     const [trackingId,setTrackingId] = useState("");
     const [bill,setBill] = useState(0);
     const [activityIndicator,setActivityIndicator] = useState(false);
+
+    const [open, setOpen] = useState(false);
+    const handleClickOpen = () => setOpen(true);
+    const handleClose = () => setOpen(false);
 
     const { handleBlur,handleSubmit,handleChange,touched,errors,values } = useFormik({
         initialValues: { title:"",description:"",origin:"",destination:"",senderFullName:"",senderPhone:"",weight:0,length:0,breadth:0,height:0,value:"" },
@@ -44,7 +53,8 @@ export default function Create () {
             timestamp: new Date().getTime()
         })
         .then( () => {
-            setActivityIndicator(false)
+            setActivityIndicator(false);
+            handleClickOpen();//open success confirmation
         })
         .catch((e) => {
             setActivityIndicator(false);
@@ -197,7 +207,7 @@ export default function Create () {
                     </div>
 
                     <Button 
-                    onClick={!errors ? handlePostToDB : null}
+                    onClick={!errors.length ? handlePostToDB : console.log(errors.length)}
                     variant="contained" 
                     type="submit">Create Package Tracking</Button>
                 </form>
@@ -249,8 +259,28 @@ export default function Create () {
         sx={(theme) => ({ color: '#fff', zIndex: theme.zIndex.drawer + 1 })}
         open={activityIndicator}
         >
-        <CircularProgress color="error" />
+            <CircularProgress color="error" />
         </Backdrop>
+
+        {/* engage this dialog after successful sending to database */}
+        <Dialog
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        >
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            <div className="flex flex-col gap-6 justify-center items-center">
+                <GrStatusGood className="text-6xl text-green-500"/>
+                <p className="text-lg text-gray-800">Your package tracking was successfuly created</p>
+            </div>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Close</Button>
+        </DialogActions>
+        </Dialog>
     </>
     )
 }
