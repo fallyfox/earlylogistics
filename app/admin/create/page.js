@@ -17,38 +17,40 @@ export default function Create () {
 
     const { handleBlur,handleSubmit,handleChange,touched,errors,values } = useFormik({
         initialValues: { title:"",description:"",origin:"",destination:"",senderFullName:"",senderPhone:"",weight:0,length:0,breadth:0,height:0,value:"" },
-        onSubmit: async () => {
-            setActivityIndicator(true);
-
-            await addDoc(collection(db,"packages"),{
-                packageId: trackingId,
-                title: values.title,
-                desc: values.description,
-                origin: values.origin,
-                destination: values.destination,
-                sender: values.senderFullName,
-                senderPhone: values.senderPhone,
-                dimension: {
-                    l: values.length,
-                    b: values.breadth,
-                    h: values.height
-                },
-                weight: values.weight,
-                billing: bill,
-                paid: false,
-                processedBy: null,
-                timestamp: new Date().getTime()
-            })
-            .then( () => {
-                setActivityIndicator(false)
-            })
-            .catch((e) => {
-                setActivityIndicator(false);
-                console.log(e);
-            })
-        },
         validationSchema: validation
     });
+
+    // create records in firestore db
+    const handlePostToDB = async () => {
+        setActivityIndicator(true);
+
+        await addDoc(collection(db,"packages"),{
+            packageId: trackingId,
+            title: values.title,
+            desc: values.description,
+            origin: values.origin,
+            destination: values.destination,
+            sender: values.senderFullName,
+            senderPhone: values.senderPhone,
+            dimension: {
+                l: values.length,
+                b: values.breadth,
+                h: values.height
+            },
+            weight: values.weight,
+            billing: bill,
+            paid: false,
+            processedBy: null,
+            timestamp: new Date().getTime()
+        })
+        .then( () => {
+            setActivityIndicator(false)
+        })
+        .catch((e) => {
+            setActivityIndicator(false);
+            console.log(e);
+        })
+    }
 
     useEffect(() => {
         if (touched.title & !errors.title) {
@@ -194,7 +196,10 @@ export default function Create () {
                         { touched.value && errors.value ? <span className="text-red-500 text-xs">{errors.value}</span> : null}
                     </div>
 
-                    <Button variant="contained" type="submit">Create Package Tracking</Button>
+                    <Button 
+                    onClick={!errors ? handlePostToDB : null}
+                    variant="contained" 
+                    type="submit">Create Package Tracking</Button>
                 </form>
             </article>
             
