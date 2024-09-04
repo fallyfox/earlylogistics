@@ -1,4 +1,5 @@
 "use client"
+import Link from "next/link";
 import { useState,useEffect } from "react";
 import { db } from "@/lib/firebase.lib";
 import { onSnapshot,collection,query,orderBy,limit,deleteDoc,doc } from "firebase/firestore";
@@ -101,6 +102,10 @@ export default function Packages () {
                             {openProgress ? <CircularProgress style={{color:"white"}}/> : null}
                             <span>Delete Package</span>
                         </Button>
+
+                        <p className="text-center text-sky-500 text-xs">
+                            <Link href={`/admin/update?doc_id=${clickedPackage}`}>Update Package Records</Link>
+                        </p>
                     </div>
                 </aside>
                 : null
