@@ -1,12 +1,14 @@
 "use client"
-import { useState,useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState,useEffect,useContext } from "react";
+import { AppContext } from "@/lib/global_context";
 import { useFormik } from "formik";
-import { TextField,Button } from "@mui/material";
+import { TextField,Button,Skeleton } from "@mui/material";
 import { validation } from "@/utils/create_form_rules";
-import { getTrackingId } from "@/utils/generate_tracking_id";
 import { billing } from "@/utils/generate_billing";
 import { db } from "@/lib/firebase.lib";
-import { collection,addDoc,getDoc } from "firebase/firestore";
+import { getDoc,updateDoc,doc } from "firebase/firestore";
 import Backdrop from '@mui/material/Backdrop';
 import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
@@ -16,25 +18,55 @@ import DialogContentText from '@mui/material/DialogContentText';
 import { GrStatusGood } from "react-icons/gr";
 
 export default function UpdatePackage () {
-    const [trackingId,setTrackingId] = useState("");
+    const [packageData,setPackageData] = useState(null);
     const [bill,setBill] = useState(0);
     const [activityIndicator,setActivityIndicator] = useState(false);
+
+    const router = useRouter();
+
+    //access global variables
+    const {packageDocId,setPackageDocId} = useContext(AppContext);
+    useEffect(() => {
+        !packageDocId ? router.push("/admin/packages") : null;//redirect if package doc id was not set
+
+        async function handleGetPackageData () {
+            const document = await getDoc(doc(db,"packages",packageDocId));
+            if (document.exists()) {
+                setPackageData(document.data())
+            }
+        }
+
+        //call function to take effect
+        handleGetPackageData();
+    },[]);
+
+    //update document function
 
     const [open, setOpen] = useState(false);
     const handleClickOpen = () => setOpen(true);
     const handleClose = () => setOpen(false);
 
     const { handleBlur,handleSubmit,handleChange,touched,errors,values } = useFormik({
-        initialValues: { title:"",description:"",origin:"",destination:"",senderFullName:"",senderPhone:"",weight:0,length:0,breadth:0,height:0,value:"" },
+        initialValues: { 
+            title:packageData?.title,
+            description:packageData?.desc,
+            origin:packageData?.origin,
+            destination:packageData?.destination,
+            senderFullName:packageData?.sender,
+            senderPhone:packageData?.senderPhone,
+            weight:packageData?.weight,
+            length:packageData?.dimension.l,
+            breadth:packageData?.dimension.b,
+            height:packageData?.dimension.h,
+            value:packageData?.value },
         validationSchema: validation
     });
 
-    // create records in firestore db
-    const handlePostToDB = async () => {
+    // update records in firestore db
+    const handleUpdateDocument = async () => {
         setActivityIndicator(true);
 
-        await addDoc(collection(db,"packages"),{
-            packageId: trackingId,
+        await updateDoc(doc(db,"packages",packageDocId),{
             title: values.title,
             desc: values.description,
             origin: values.origin,
@@ -50,7 +82,7 @@ export default function UpdatePackage () {
             billing: bill,
             paid: false,
             processedBy: null,
-            timestamp: new Date().getTime()
+            updatedAt: new Date().getTime()
         })
         .then( () => {
             setActivityIndicator(false);
@@ -63,12 +95,6 @@ export default function UpdatePackage () {
     }
 
     useEffect(() => {
-        if (touched.title & !errors.title) {
-            setTrackingId(getTrackingId())
-        }
-    },[touched.title]);
-
-    useEffect(() => {
         if (!errors.weight & !errors.length & !errors.breadth & !errors.height) {
             setBill(billing(values.weight,values.length,values.breadth,values.height))
         }
@@ -76,7 +102,16 @@ export default function UpdatePackage () {
 
     return (
         <>
-        <section className="lg:grid lg:grid-cols-2 lg:gap-12 py-12 px-4 md:px-8 lg:px-12">
+        { packageData == null 
+        ?
+        <div>
+            <Skeleton animation="wave"/>
+            <Skeleton animation="wave"/>
+            <Skeleton animation="wave"/>
+            <Skeleton animation="wave"/>
+        </div>
+        :
+        <section className="lg:grid lg:grid-cols-2 lg:gap-12 py-12 px-4 md:px-8 lg:px-12 mt-[72px]">
             <article className="p-4 border border-gray-200 rounded-md">
                 <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                     <div>
@@ -207,9 +242,9 @@ export default function UpdatePackage () {
                     </div>
 
                     <Button 
-                    onClick={!errors.length ? handlePostToDB : console.log(errors.length)}
+                    onClick={!errors.length ? handleUpdateDocument : console.log(errors.length)}
                     variant="contained" 
-                    type="submit">Create Package Tracking</Button>
+                    type="submit">Update Package</Button>
                 </form>
             </article>
             
@@ -219,7 +254,7 @@ export default function UpdatePackage () {
                         <p className="text-xl text-gray-800">Tracking ID</p>
                     </blockquote>
                     <blockquote className="h-24 flex justify-center items-center p-4">
-                        <p className="text-2xl text-gray-800">{trackingId}</p>
+                        <p className="text-2xl text-gray-800">{packageData.packageId}</p>
                     </blockquote>
                 </div>
 
@@ -254,6 +289,7 @@ export default function UpdatePackage () {
                 </div>
             </aside>
         </section>
+        }
 
         <Backdrop
         sx={(theme) => ({ color: '#fff', zIndex: theme.zIndex.drawer + 1 })}
@@ -273,7 +309,9 @@ export default function UpdatePackage () {
           <DialogContentText id="alert-dialog-description">
             <div className="flex flex-col gap-6 justify-center items-center">
                 <GrStatusGood className="text-6xl text-green-500"/>
-                <p className="text-lg text-gray-800">Your package tracking was successfuly created</p>
+                <p className="text-lg text-gray-800">Your package tracking was successfuly updated</p>
+
+                <Link href="/admin/packages" className="bg-sky-500 p-4 rounded-md text-center mt-6">Return to Packages</Link>
             </div>
           </DialogContentText>
         </DialogContent>

@@ -1,6 +1,7 @@
 "use client"
 import Link from "next/link";
-import { useState,useEffect } from "react";
+import { useState,useEffect,useContext } from "react";
+import { AppContext } from "@/lib/global_context";
 import { db } from "@/lib/firebase.lib";
 import { onSnapshot,collection,query,orderBy,limit,deleteDoc,doc } from "firebase/firestore";
 import { AdminPackageCard } from "@/components/AdminPackageCard";
@@ -11,6 +12,9 @@ export default function Packages () {
     const [clickedPackage,setClickedPackage] = useState(undefined);
     const [selectedPackage,setSelectedPackage] = useState(null);
     const [openProgress,setOpenProgress] = useState(false);
+
+    //access global variables
+    const {packageDocId,setPackageDocId} = useContext(AppContext);
 
     useEffect(() => {
         onSnapshot(collection(db,"packages"),onSnap => {
@@ -56,7 +60,12 @@ export default function Packages () {
 
                 {packages.map(item => {
                     return (
-                        <div onClick={() => setClickedPackage(item.id)}>
+                        <div 
+                        key={item.id}
+                        onClick={() => {
+                            setClickedPackage(item.id);
+                            setPackageDocId(item.id);//updates a global variable
+                        }}>
                             <AdminPackageCard 
                             senderName={item.data.sender} 
                             timestamp={item.data.timestamp} 
