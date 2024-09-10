@@ -3,15 +3,23 @@ import Link from "next/link";
 import { useState,useEffect,useContext } from "react";
 import { AppContext } from "@/lib/global_context";
 import { db } from "@/lib/firebase.lib";
-import { onSnapshot,collection,query,orderBy,limit,deleteDoc,doc } from "firebase/firestore";
+import { onSnapshot,collection,query,orderBy,limit,deleteDoc,doc,updateDoc } from "firebase/firestore";
 import { AdminPackageCard } from "@/components/AdminPackageCard";
 import { Button,CircularProgress } from "@mui/material";
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import { GrStatusGood } from "react-icons/gr";
 
 export default function Packages () {
     const [packages,setPackages] = useState([]);
     const [clickedPackage,setClickedPackage] = useState(undefined);
     const [selectedPackage,setSelectedPackage] = useState(null);
     const [openProgress,setOpenProgress] = useState(false);
+    const [trackUpdatePanel,setTrackUpdatePanel] = useState(false);
+    const [open, setOpen] = useState(false);
+    const handleClose = () => setOpen(false);
 
     //access global variables
     const {packageDocId,setPackageDocId} = useContext(AppContext);
@@ -53,7 +61,30 @@ export default function Packages () {
         })
     }
 
+
+    //update tracking on database
+    async function handleUpdateTracking (proc,flig,tran,deli) {
+        const currentTracking = {
+            processed:proc,
+            flight: flig,
+            transit: tran,
+            delivered: deli
+        }
+
+        await updateDoc(doc(db,"packages",selectedPackage.id),{
+            trackingDetails: currentTracking,
+        })
+        .then(() => {
+            setOpen(true)
+        })
+        .catch((error) => {
+            alert("There was a problem")
+            console.log(error);
+        })
+    } 
+
     return (
+        <>
         <section className="pt-[68px] grid grid-cols-3 gap-6 py-12 px-8 md:px-12 lg:px-16">
             <article className="col-span-2 border border-gray-500 rounded-md p-6">
                 <h2 className="text-3xl text-gray-800 mb-6">Recent Packages</h2>
@@ -82,6 +113,38 @@ export default function Packages () {
                 <aside>
                     {/* when a package is clicked, the details will show here */}
                     <div className="flex flex-col gap-5 bg-gray-800 rounded-md p-6">
+                        <div className="pb-2 border-b border-gray-600">
+                            <Button onClick={() => setTrackUpdatePanel(!trackUpdatePanel ? true : false)} variant="contained" className="w-full">
+                                {!trackUpdatePanel ? "Open" : "Hide"} Track Update Panel
+                            </Button>
+
+                            {trackUpdatePanel ?
+                            <ul className="flex justify-between gap-3 items-center mt-4">
+                                <li>
+                                    <Button 
+                                    onClick={() => handleUpdateTracking(selectedPackage?.data.trackingDetails.processed,new Date().getTime(),null,null)} 
+                                    variant="contained" 
+                                    color="info" 
+                                    size="small">Flight</Button>
+                                </li>
+                                <li>
+                                    <Button 
+                                    onClick={() => handleUpdateTracking(selectedPackage?.data.trackingDetails.processed,null,new Date().getTime(),null)}
+                                    variant="contained" 
+                                    color="warning" 
+                                    size="small">Transit</Button>
+                                </li>
+                                <li>
+                                    <Button 
+                                    onClick={() => handleUpdateTracking(selectedPackage?.data.trackingDetails.processed,null,null,new Date().getTime())}
+                                    variant="contained" 
+                                    color="success" 
+                                    size="small">Delivered</Button>
+                                </li>
+                            </ul>
+                            : null}
+                        </div>
+
                         <div className="grid grid-cols-2 gap-4 pb-2 border-b border-gray-600">
                             <p className="text-gray-100">
                                 <span className="block text-xs mb-1 text-gray-300">Billing</span>
@@ -120,5 +183,25 @@ export default function Packages () {
                 : null
             }
         </section>
+
+        {/* general success dialog */}
+        <Dialog
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        >
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            <div className="flex flex-col gap-6 justify-center items-center">
+                <GrStatusGood className="text-6xl text-green-500"/>
+            </div>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Close</Button>
+        </DialogActions>
+        </Dialog>
+        </>
     )
 }

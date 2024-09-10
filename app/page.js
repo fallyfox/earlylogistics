@@ -19,7 +19,7 @@ export default function Home () {
           <h1 className="text-yellow-500 text-5xl lg:text-6xl font-bold text-center">Package Tracking At It&apos;s Best</h1>
           
           <blockquote className="flex justify-center">
-            <Link href="#" className="bg-red-500 p-8 lg:p-6 text-center text-white text-xl">Track Package</Link>
+            <Link href="/track" className="bg-red-500 p-8 lg:p-6 text-center text-white text-xl">Track Package</Link>
           </blockquote>
         </div>
 

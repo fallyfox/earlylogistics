@@ -2,10 +2,10 @@
 import { useState,useEffect } from "react";
 import { useFormik } from "formik";
 import { TextField,Button } from "@mui/material";
-import { validation } from "@/utils/create_form_rules";//
-import { getTrackingId } from "@/utils/generate_tracking_id";//
-import { billing } from "@/utils/generate_billing";//
-import { db } from "@/lib/firebase.lib";//
+import { validation } from "@/utils/create_form_rules";
+import { getTrackingId } from "@/utils/generate_tracking_id";
+import { billing } from "@/utils/generate_billing";
+import { db } from "@/lib/firebase.lib";
 import { collection,addDoc } from "firebase/firestore";
 import Backdrop from '@mui/material/Backdrop';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -50,6 +50,12 @@ export default function Create () {
             billing: bill,
             paid: false,
             processedBy: null,
+            trackingDetails: {
+                processed: new Date().getTime(),
+                flight: null,
+                transit: null,
+                delivered: null,
+            },
             timestamp: new Date().getTime()
         })
         .then( () => {
@@ -76,7 +82,7 @@ export default function Create () {
 
     return (
         <>
-        <section className="lg:grid lg:grid-cols-2 lg:gap-12 py-12 px-4 md:px-8 lg:px-12">
+        <section className="lg:grid lg:grid-cols-2 lg:gap-12 py-12 px-4 md:px-8 lg:px-12 mt-[68px]">
             <article className="p-4 border border-gray-200 rounded-md">
                 <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                     <div>
